@@ -35,13 +35,14 @@ connect(
 )
 {
   websocketpp::lib::error_code ec;
-
   try
   {
     // Register our message handler
     client.set_message_handler( [=](websocketpp::connection_hdl con, message_ptr frame) {
       //get response
       auto msg = json::parse(frame->get_payload());
+
+      std::cout << "msg received: " << msg << std::endl;
 
       // If there is no type, do nothing and get out of here
       if (msg.find("type") == msg.end())
@@ -73,6 +74,10 @@ connect(
 
         //Keep the connection alive
         is_running.store(true);
+      }
+      // If error message
+      if (type.compare("error") == 0 ){
+        listener->onDisconnected();
       }
     });
     
@@ -114,8 +119,14 @@ connect(
       return ctx;
     });
 
+    // Remove space to avoid errors.
+    token.erase(remove_if(token.begin(), token.end(), isspace), token.end());
+
+    std::string wss = url + "?token=" + token;
+
     // Create websocket connection and add token and callback parameters
-    std::string wss = url + "/?token=" + token;
+    std::cout << " Connection URL: " << wss  << std::endl;
+
     // Get connection
     connection = client.get_connection(wss, ec);
     
@@ -162,10 +173,10 @@ open(
       { "transId" , 0         },
       { "data" ,
         {
-          { "milliId", milliId },
-          { "name"   , milliId },
-          { "sdp"    , sdp     },
-          { "codec"  , codec   },
+          { "streamId", milliId },
+          { "name"    , milliId },
+          { "sdp"     , sdp     },
+          { "codec"   , codec   },
         }
       }
     };
